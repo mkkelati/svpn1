@@ -1,0 +1,49 @@
+#!/bin/bash
+# VLESS Reality - Auto Expire Check (runs daily via cron)
+# Removes expired VLESS users automatically
+
+VLESS_DIR="/etc/vless-reality"
+VLESS_USERS="$VLESS_DIR/users"
+VLESS_CONFIG="/usr/local/etc/xray/config.json"
+
+[[ ! -d "$VLESS_USERS" ]] && exit 0
+
+changed=0
+today=$(date +%s)
+
+for user_file in "$VLESS_USERS"/*; do
+    [[ ! -f "$user_file" ]] && continue
+
+    uname=$(basename "$user_file")
+    expiry=$(grep "EXPIRY=" "$user_file" | cut -d= -f2)
+    uuid=$(grep "UUID=" "$user_file" | cut -d= -f2)
+
+    exp_ts=$(date -d "$expiry" +%s 2>/dev/null || echo "0")
+
+    if [[ "$today" -gt "$exp_ts" ]]; then
+        # Remove from config
+        if command -v jq &> /dev/null; then
+            jq "del(.inbounds[0].settings.clients[] | select(.id == \"$uuid\"))" "$VLESS_CONFIG" > /tmp/xray_tmp.json
+            mv /tmp/xray_tmp.json "$VLESS_CONFIG"
+        else
+            python3 -c "
+import json
+with open('$VLESS_CONFIG', 'r') as f:
+    config = json.load(f)
+config['inbounds'][0]['settings']['clients'] = [
+    c for c in config['inbounds'][0]['settings']['clients']
+    if c['id'] != '$uuid'
+]
+with open('$VLESS_CONFIG', 'w') as f:
+    json.dump(config, f, indent=2)
+"
+        fi
+        # Remove user file
+        rm -f "$user_file"
+        changed=1
+        echo "$(date): Expired VLESS user '$uname' removed." >> /var/log/vless_expire.log
+    fi
+done
+
+# Restart XRay only if changes were made
+[[ "$changed" -eq 1 ]] && systemctl restart xray > /dev/null 2>&1
