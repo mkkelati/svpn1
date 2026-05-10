@@ -206,7 +206,8 @@ stsvless=$(systemctl is-active xray 2>/dev/null && echo -e "\033[1;32m♦ " || e
 echo -e "\033[1;31m[\033[1;36m31\033[1;31m] \033[1;37m◇ \033[1;33mINSTALL VLESS REALITY $stsvless\033[1;31m
 [\033[1;36m32\033[1;31m] \033[1;37m◇ \033[1;33mADD VLESS USER \033[1;31m
 [\033[1;36m33\033[1;31m] \033[1;37m◇ \033[1;33mREMOVE VLESS USER \033[1;31m
-[\033[1;36m34\033[1;31m] \033[1;37m◇ \033[1;33mEXPORT VLESS LINK \033[1;31m"
+[\033[1;36m34\033[1;31m] \033[1;37m◇ \033[1;33mEXPORT VLESS LINK \033[1;31m
+[\033[1;36m35\033[1;31m] \033[1;37m◇ \033[1;33mLIVE VLESS MONITOR \033[1;31m"
 echo ""
 echo -e "\033[0;34m◇───────────────────────────────────────────────◇\033[0m"
 echo ""
@@ -279,6 +280,11 @@ case "$x" in
    clear
    vless_export
    echo -ne "\n\033[1;31m◇ ENTER \033[1;33mto return to \033[1;32mMENU!\033[0m"; read
+   menu2
+   ;;
+   35)
+   clear
+   vless_monitor
    menu2
    ;;
    0|00)

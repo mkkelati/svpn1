@@ -62,7 +62,7 @@ EOF
 # Read current clients and add new one
 if command -v jq &> /dev/null; then
     # Use jq to add client
-    jq ".inbounds[0].settings.clients += [{\"id\": \"$USER_UUID\", \"flow\": \"xtls-rprx-vision\"}]" "$VLESS_CONFIG" > /tmp/xray_tmp.json
+    jq ".inbounds[] |= if .tag == \"vless-reality\" then .settings.clients += [{\"id\": \"$USER_UUID\", \"flow\": \"xtls-rprx-vision\", \"email\": \"$username\"}] else . end" "$VLESS_CONFIG" > /tmp/xray_tmp.json
     mv /tmp/xray_tmp.json "$VLESS_CONFIG"
 else
     # Use python3 as fallback
@@ -70,10 +70,20 @@ else
 import json
 with open('$VLESS_CONFIG', 'r') as f:
     config = json.load(f)
-config['inbounds'][0]['settings']['clients'].append({
-    'id': '$USER_UUID',
-    'flow': 'xtls-rprx-vision'
-})
+for inb in config['inbounds']:
+    if inb.get('tag') == 'vless-reality':
+        inb['settings']['clients'].append({
+            'id': '$USER_UUID',
+            'flow': 'xtls-rprx-vision',
+            'email': '$username'
+        })
+        break
+else:
+    config['inbounds'][0]['settings']['clients'].append({
+        'id': '$USER_UUID',
+        'flow': 'xtls-rprx-vision',
+        'email': '$username'
+    })
 with open('$VLESS_CONFIG', 'w') as f:
     json.dump(config, f, indent=2)
 "
